@@ -19,7 +19,7 @@ BASE_LINK = "http://www.keyakizaka46.com"
 LINK = "http://www.keyakizaka46.com/s/k46o/diary/member/list?ima=0000&page=%s&cd=member&ct=%s"
 
 first_page = 0
-last_page = 16
+last_page = 0
 idol = "10"
 
 from fpdf import FPDF, HTMLMixin
@@ -36,6 +36,17 @@ class BlogContent(object):
 
     def change_document(self, document):
         pass
+
+class BlogHeadingContent(BlogContent):
+    def __init__(self, heading, level=1):
+        self.heading = heading
+        self.level = level
+    
+    def get_content(self):
+        return self.heading
+    
+    def change_document(self, document):
+        document.add_heading(self.heading, level=self.level)
 
 class BlogTextContent(BlogContent):
     def __init__(self, text):
@@ -86,8 +97,6 @@ def traverse_through_article(element):
                 contents.append(BlogTextContent(''))
             elif child.name == 'div' or child.name == 'span':
                 contents.extend(traverse_through_article(child))
-            elif child.name == 'img':
-                contents.append(BlogImageContent(child.get('src')))
     return contents
 
 for page_number in range(first_page, last_page + 1):
@@ -114,6 +123,10 @@ for page_number in range(first_page, last_page + 1):
             blogFile = os.path.join(curpath, 'output', '%s' % (blogFileName.replace("/","-").replace("\\","-")))
 
             contents = []
+            contents.append(BlogHeadingContent(blogFileName))
+            contents.append(BlogHeadingContent(blogTitleLink, 2))
+            # document.add_heading(blogFileName, level=1)
+            # document.add_heading(blogTitleLink, level=2)
             contents.extend(traverse_through_article(article.find("div", class_="box-article")))
             print "===================="
             document = Document()
@@ -127,8 +140,6 @@ for page_number in range(first_page, last_page + 1):
             headingFont.name = "Hiragino Sans"
             headingLinkStyle.font.name = "Hiragino Sans"
 
-            document.add_heading(blogFileName, level=1)
-            document.add_heading(blogTitleLink, level=2)
             for content in contents:
                 content.change_document(document)
             document.save("%s.docx" % (blogFile))
